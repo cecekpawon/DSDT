@@ -76,8 +76,6 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
         {
             Method (_INI, 0, NotSerialized)
             {
-                /* Here we disable/hide Devices (LNKx) */
-
                 Store (Zero, \_SB_.LNKA._STA)
                 Store (Zero, \_SB_.LNKB._STA)
                 Store (Zero, \_SB_.LNKC._STA)
@@ -87,27 +85,19 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                 Store (Zero, \_SB_.LNKG._STA)
                 Store (Zero, \_SB_.LNKH._STA)
 
-                /* Here we disable/hide Devices (B0D3)
-
+                /*
                 Store (Zero, \_SB_.PCI0.B0D3._STA)
                 */
 
-                /* Here we disable/hide Devices (TMPX) */
-
                 Store (Zero, \_SB_.PCI0.TPMX._STA)
 
-                /* Here we disable/hide Devices (PS2x) */
-
                 Store (Zero, \IOST)
-
-                /* Here we disable/hide ThermalZone (TZ0n) */
 
                 Store (Zero, \_TZ_.TZ00)
                 Store (Zero, \_TZ_.TZ01)
             }
 
-            /* Here we disable/hide Device WCAM
-
+            /*
             Scope (WCAM)
             {
                 Name (_STA, Zero)
@@ -121,141 +111,34 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                 Name (_CID, "backlight")
                 Name (_UID, 0x0A)
                 Name (_STA, 0x0B)
-/*
-                Method (_DSM, 4, NotSerialized)
-                {
-                    If (LEqual (Arg2, Zero))
-                    {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
-                    }
-
-                    Return (Package (0x02)
-                    {
-                        "refnum",
-                        0x00,
-                        "type",
-                        BLCT
-                    })
-                }
-*/
-            }
-        }
-
-        Scope (\_SB_.PCI0)
-        {
-            /* Here we inject a new Device MCHC */
-
-            Device (MCHC)
-            {
-                Name (_ADR, Zero)
             }
 
-            /* Here we inject a new Device HECI / MEI */
-
-            Device (HECI)
+            Device (SLPB)
             {
-                Name (_ADR, 0x00160000)
+                Name (_HID, EisaId ("PNP0C0E"))
+                Name (_STA, 0x0B)
             }
 
-            /* Here we disable/hide Device GFX0 */
-
-            Scope (GFX0)
+            Scope (\_SB_.PCI0)
             {
-                Name (_STA, Zero)
-            }
-
-            /* Here we inject a new Device IGPU */
-
-            Device (IGPU)
-            {
-                Name (_ADR, 0x00020000) // _ADR: Address
-
-                Method (_DSM, 4, NotSerialized)
-                {
-                    If (LEqual (Arg2, Zero))
-                    {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
-                    }
-
-                    Return (Package (0x02)
-                    {
-                        "hda-gfx",
-                        Buffer (0x0A)
-                        {
-                            "onboard-1"
-                        }
-                    })
-                }
-            }
-
-            /* Here we inject a new Device HDAU
-
-            Device (HDAU)
-            {
-                Name (_ADR, 0x00030000)
-                Name (_STA, 0x0F) // _STA: Status
-
-                OperationRegion (HDAH, PCI_Config, 0x54, One)
-                Field (HDAH, ByteAcc, NoLock, Preserve)
-                {
-                        ,   5,
-                    AUDE,   1
-                }
-
-                Method (_INI, 0, NotSerialized)
-                {
-                    Store (One, AUDE)
-                    Notify (PCI0, Zero)
-                }
-
-                // Here we inject a new Method _DSM
-
-                Method (_DSM, 4, NotSerialized)
-                {
-                    If (LEqual (Arg2, Zero))
-                    {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
-                    }
-
-                    Return (Package (0x02)
-                    {
-                        "hda-gfx",
-                        Buffer (0x0A)
-                        {
-                            "onboard-1"
-                        }
-                    })
-                }
-            }
-            */
-
-            Scope (PEG0)
-            {
-                // Disable PEGP to overide with GFX0
-                Scope (PEGP)
-                {
-                    Name (_STA, Zero)
-                }
-
-                // Disable unknown HRU4 devices
-                Scope (HRU4)
-                {
-                    Name (_STA, Zero)
-                }
-
-                Device (GFX0)
+                Device (MCHC)
                 {
                     Name (_ADR, Zero)
-                    //Name (_SUN, One)        // Avoid kernel: System sleep prevented by GFX0
+                }
+
+                Device (HECI) // MEI
+                {
+                    Name (_ADR, 0x00160000)
+                }
+
+                Scope (GFX0)
+                {
+                    Name (_STA, Zero)
+                }
+
+                Device (IGPU)
+                {
+                    Name (_ADR, 0x00020000)
 
                     Method (_DSM, 4, NotSerialized)
                     {
@@ -272,15 +155,32 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                             "hda-gfx",
                             Buffer (0x0A)
                             {
-                                "onboard-2"
+                                "onboard-1"
                             }
                         })
                     }
                 }
 
+                /*
                 Device (HDAU)
                 {
-                    Name (_ADR, One)
+                    Name (_ADR, 0x00030000)
+                    Name (_STA, 0x0F) // _STA: Status
+
+                    OperationRegion (HDAH, PCI_Config, 0x54, One)
+                    Field (HDAH, ByteAcc, NoLock, Preserve)
+                    {
+                            ,   5,
+                        AUDE,   1
+                    }
+
+                    Method (_INI, 0, NotSerialized)
+                    {
+                        Store (One, AUDE)
+                        Notify (PCI0, Zero)
+                    }
+
+                    // Here we inject a new Method _DSM
 
                     Method (_DSM, 4, NotSerialized)
                     {
@@ -297,147 +197,99 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                             "hda-gfx",
                             Buffer (0x0A)
                             {
-                                "onboard-2"
+                                "onboard-1"
                             }
                         })
                     }
                 }
-            }
+                */
 
-            // Disable unknown HRU4 devices
-            Scope (\_SB_.PCI0.PEG1.HRU4)
-            {
-                Name (_STA, Zero)
-            }
-
-            // Disable unknown HRU4 devices
-            Scope (\_SB_.PCI0.PEG2.HRU4)
-            {
-                Name (_STA, Zero)
-            }
-
-            // Disable unknown HRU4 devices
-            Scope (\_SB_.PCI0.RP01.HRU4)
-            {
-                Name (_STA, Zero)
-            }
-
-            /* Here we disable/hide Device B0D4 */
-
-            Scope (B0D4)
-            {
-                Name (_STA, Zero)
-            }
-
-            /* Here we add (audio related) properties to Device HDEF */
-
-            Scope (HDEF)
-            {
-                /* Here we inject a new Method _DSM */
-
-                Method (_DSM, 4, NotSerialized)
+                Scope (PEG0)
                 {
-                    If (LEqual (Arg2, Zero))
+                    Scope (PEGP)
                     {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
+                        Name (_STA, Zero)
                     }
 
-                    Return (Package (0x06)
+                    Scope (HRU4)
                     {
-                        "layout-id",
-                        Buffer (0x04)
-                        {
-                            0x03, 0x00, 0x00, 0x00
-                        },
+                        Name (_STA, Zero)
+                    }
 
-                        "PinConfigurations",
-                        Buffer (Zero) {},
+                    Device (GFX0)
+                    {
+                        Name (_ADR, Zero)
+                        //Name (_SUN, One) ; Avoid kernel: System sleep prevented by GFX0
 
-                        "hda-gfx",
-                        Buffer (0x0A)
+                        Method (_DSM, 4, NotSerialized)
                         {
-                            "onboard-1"
+                            If (LEqual (Arg2, Zero))
+                            {
+                                Return (Buffer (One)
+                                {
+                                    0x03
+                                })
+                            }
+
+                            Return (Package (0x02)
+                            {
+                                "hda-gfx",
+                                Buffer (0x0A)
+                                {
+                                    "onboard-2"
+                                }
+                            })
                         }
-                    })
-                }
-            }
+                    }
 
-            Scope (LPCB)
-            {
-                /* Here we disable/hide Device SIO1 */
-
-                Scope (SIO1)
-                {
-                    Name (_STA, Zero)
-                }
-            }
-
-            /* RP05 is used for my Wifi/Bluetooth 4.0 card, installed in slot 'PCIEX4'
-
-            Scope (RP05)
-            {
-                // Here we disable/hide Device PSXS
-
-                Scope (PXSX)
-                {
-                    Name (_STA, Zero)
-                }
-
-                // Here we inject a new Device ARPT
-
-                Device (ARPT)
-                {
-                    Name (_ADR, Zero)
-                    Name (_PRW, Package (0x02)
+                    Device (HDAU)
                     {
-                        0x09,
-                        0x04
-                    })
+                        Name (_ADR, One)
+
+                        Method (_DSM, 4, NotSerialized)
+                        {
+                            If (LEqual (Arg2, Zero))
+                            {
+                                Return (Buffer (One)
+                                {
+                                    0x03
+                                })
+                            }
+
+                            Return (Package (0x02)
+                            {
+                                "hda-gfx",
+                                Buffer (0x0A)
+                                {
+                                    "onboard-2"
+                                }
+                            })
+                        }
+                    }
                 }
-            }
 
-            */
-
-            /* Here we disable/hide Device SAT0 */
-
-            Scope (SAT0)
-            {
-                Name (_STA, Zero)
-            }
-
-            /* Here we disable/hide Device SAT1 */
-
-            Scope (SAT1)
-            {
-                Name (_STA, Zero)
-            }
-
-            /* Here we inject a new Device SATA */
-
-            Device (SATA)
-            {
-                Name (_ADR, 0x001F0002)
-            }
-
-            /* Here we disable/hide Device WMI1 */
-
-            Scope (WMI1)
-            {
-                Name (_STA, Zero)
-            }
-
-            Device (\_SB_.PCI0.SBUS.BUS0)
-            {
-                Name (_CID, "smbus")
-                Name (_ADR, Zero)
-                Device (DVL0)
+                Scope (\_SB_.PCI0.PEG1.HRU4)
                 {
-                    Name (_ADR, 0x57)
-                    Name (_CID, "diagsvault")
+                    Name (_STA, Zero)
+                }
 
+                Scope (\_SB_.PCI0.PEG2.HRU4)
+                {
+                    Name (_STA, Zero)
+                }
+
+                Scope (\_SB_.PCI0.RP01.HRU4)
+                {
+                    Name (_STA, Zero)
+                }
+
+                Scope (B0D4)
+                {
+                    Name (_STA, Zero)
+                }
+
+                Scope (HDEF)
+                {
                     Method (_DSM, 4, NotSerialized)
                     {
                         If (LEqual (Arg2, Zero))
@@ -448,142 +300,224 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                             })
                         }
 
-                        Return (Package (0x02)
+                        Return (Package (0x06)
                         {
-                            "address",
-                            0x57
+                            "layout-id",
+                            Buffer (0x04)
+                            {
+                                0x03, 0x00, 0x00, 0x00
+                            },
+
+                            "PinConfigurations",
+                            Buffer (Zero) {},
+
+                            "hda-gfx",
+                            Buffer (0x0A)
+                            {
+                                "onboard-1"
+                            }
                         })
                     }
                 }
-            }
 
-            Scope (EHC1)
-            {
-                Method (_DSM, 4, NotSerialized)
+                Scope (LPCB)
                 {
-                    If (LEqual (Arg2, Zero))
+                    Scope (SIO1)
                     {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
+                        Name (_STA, Zero)
                     }
-
-                    Return (Package (0x0D)
-                    {
-                        "AAPL,current-available", 0x0834,
-                        "AAPL,current-extra", 0x0A8C,
-                        "AAPL,current-in-sleep", 0x03E8,
-                        "AAPL,current-extra-in-sleep", 0x0834,
-                        "AAPL,max-port-current-in-sleep", 0x0A8C,
-                        "AAPL,device-internal", 0x02,
-                        Buffer (One) {0x00}
-                    })
                 }
-            }
 
-            Scope (EHC2)
-            {
-                Method (_DSM, 4, NotSerialized)
+                /*
+                Scope (RP05)
                 {
-                    If (LEqual (Arg2, Zero))
+                    // Here we disable/hide Device PSXS
+
+                    Scope (PXSX)
                     {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
+                        Name (_STA, Zero)
                     }
 
-                    Return (Package (0x0D)
+                    // Here we inject a new Device ARPT
+
+                    Device (ARPT)
                     {
-                        "AAPL,current-available", 0x0834,
-                        "AAPL,current-extra", 0x0A8C,
-                        "AAPL,current-in-sleep", 0x03E8,
-                        "AAPL,current-extra-in-sleep", 0x0834,
-                        "AAPL,max-port-current-in-sleep", 0x0A8C,
-                        "AAPL,device-internal", 0x02,
-                        Buffer (One) {0x00}
-                    })
+                        Name (_ADR, Zero)
+                        Name (_PRW, Package (0x02)
+                        {
+                            0x09,
+                            0x04
+                        })
+                    }
                 }
-            }
 
-            Scope (XHC)
-            {
-                Method (_DSM, 4, NotSerialized)
+                */
+
+                Scope (SAT0)
                 {
-                    If (LEqual (Arg2, Zero))
-                    {
-                        Return (Buffer (One)
-                        {
-                            0x03
-                        })
-                    }
-
-                    Return (Package (0x0D)
-                    {
-                        "AAPL,current-available", 0x0834,
-                        "AAPL,current-extra", 0x0A8C,
-                        "AAPL,current-in-sleep", 0x03E8,
-                        "AAPL,current-extra-in-sleep", 0x0834,
-                        "AAPL,max-port-current-in-sleep", 0x0A8C,
-                        "AAPL,device-internal", 0x02,
-                        Buffer (One) {0x00}
-                    })
+                    Name (_STA, Zero)
                 }
-            }
 
-            Scope (GLAN)
-            {
-                Method (_DSM, 4, NotSerialized)
+                Scope (SAT1)
                 {
-                    If (LEqual (Arg2, Zero))
+                    Name (_STA, Zero)
+                }
+
+                Device (SATA)
+                {
+                    Name (_ADR, 0x001F0002)
+                }
+
+                Scope (WMI1)
+                {
+                    Name (_STA, Zero)
+                }
+
+                Device (\_SB_.PCI0.SBUS.BUS0)
+                {
+                    Name (_CID, "smbus")
+                    Name (_ADR, Zero)
+                    Device (DVL0)
                     {
-                        Return (Buffer (One)
+                        Name (_ADR, 0x57)
+                        Name (_CID, "diagsvault")
+
+                        Method (_DSM, 4, NotSerialized)
                         {
-                            0x03
+                            If (LEqual (Arg2, Zero))
+                            {
+                                Return (Buffer (One)
+                                {
+                                    0x03
+                                })
+                            }
+
+                            Return (Package (0x02)
+                            {
+                                "address", 0x57
+                            })
+                        }
+                    }
+                }
+
+                Scope (EHC1)
+                {
+                    Method (_DSM, 4, NotSerialized)
+                    {
+                        If (LEqual (Arg2, Zero))
+                        {
+                            Return (Buffer (One)
+                            {
+                                0x03
+                            })
+                        }
+
+                        Return (Package (0x0D)
+                        {
+                            "AAPL,current-available", 0x0834,
+                            "AAPL,current-extra", 0x0A8C,
+                            "AAPL,current-in-sleep", 0x03E8,
+                            "AAPL,current-extra-in-sleep", 0x0834,
+                            "AAPL,max-port-current-in-sleep", 0x0A8C,
+                            "AAPL,device-internal", 0x02,
+                            Buffer (One) {0x00}
                         })
                     }
+                }
 
-                    Return (Package (0x04)
+                Scope (EHC2)
+                {
+                    Method (_DSM, 4, NotSerialized)
                     {
-                        "built-in", Buffer (One) {0x01},
-                        "location", Buffer (One) {"1"}
-                    })
+                        If (LEqual (Arg2, Zero))
+                        {
+                            Return (Buffer (One)
+                            {
+                                0x03
+                            })
+                        }
+
+                        Return (Package (0x0D)
+                        {
+                            "AAPL,current-available", 0x0834,
+                            "AAPL,current-extra", 0x0A8C,
+                            "AAPL,current-in-sleep", 0x03E8,
+                            "AAPL,current-extra-in-sleep", 0x0834,
+                            "AAPL,max-port-current-in-sleep", 0x0A8C,
+                            "AAPL,device-internal", 0x02,
+                            Buffer (One) {0x00}
+                        })
+                    }
+                }
+
+                Scope (XHC)
+                {
+                    Method (_DSM, 4, NotSerialized)
+                    {
+                        If (LEqual (Arg2, Zero))
+                        {
+                            Return (Buffer (One)
+                            {
+                                0x03
+                            })
+                        }
+
+                        Return (Package (0x0D)
+                        {
+                            "AAPL,current-available", 0x0834,
+                            "AAPL,current-extra", 0x0A8C,
+                            "AAPL,current-in-sleep", 0x03E8,
+                            "AAPL,current-extra-in-sleep", 0x0834,
+                            "AAPL,max-port-current-in-sleep", 0x0A8C,
+                            "AAPL,device-internal", 0x02,
+                            Buffer (One) {0x00}
+                        })
+                    }
+                }
+
+                Scope (GLAN)
+                {
+                    Method (_DSM, 4, NotSerialized)
+                    {
+                        If (LEqual (Arg2, Zero))
+                        {
+                            Return (Buffer (One)
+                            {
+                                0x03
+                            })
+                        }
+
+                        Return (Package (0x04)
+                        {
+                            "built-in", 0x01,
+                            "location", "1"
+                        })
+                    }
                 }
             }
         }
 
         Scope (\_TZ_)
         {
-            /* Here we disable/hide Device FAN0 */
-
             Scope (FAN0)
             {
                 Name (_STA, Zero)
             }
-
-            /* Here we disable/hide Device FAN1 */
 
             Scope (FAN1)
             {
                 Name (_STA, Zero)
             }
 
-            /* Here we disable/hide Device FAN2 */
-
             Scope (FAN2)
             {
                 Name (_STA, Zero)
             }
 
-            /* Here we disable/hide Device FAN3 */
-
             Scope (FAN3)
             {
                 Name (_STA, Zero)
             }
-
-            /* Here we disable/hide Device FAN4 */
 
             Scope (FAN4)
             {
