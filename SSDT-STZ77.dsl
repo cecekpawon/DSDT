@@ -119,7 +119,7 @@ DefinitionBlock ("SSDT-STZ77.aml", "SSDT", 1, "APPLE", "tinySSDT", 0x00000006)
                 Name (_STA, 0x0B)
             }
 
-            Scope (\_SB_.PCI0)
+            Scope (PCI0)
             {
                 Device (MCHC)
                 {
